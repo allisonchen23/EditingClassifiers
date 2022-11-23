@@ -23,7 +23,7 @@ model_urls = {
 
 class InputNormalize(ch.nn.Module):
     '''
-    A module (custom layer) for normalizing the input to have a fixed 
+    A module (custom layer) for normalizing the input to have a fixed
     mean and standard deviation (user-specified).
     '''
     def __init__(self, new_mean, new_std):
@@ -35,17 +35,18 @@ class InputNormalize(ch.nn.Module):
         x = ch.clamp(x, 0, 1)
         x_normalized = (x - self.new_mean.to(x.device))/self.new_std.to(x.device)
         return x_normalized
-    
+
 class Flatten(nn.Module):
     def forward(self, x):
         x = torch.flatten(x, 1)
         return x
-    
+
 class VGG(nn.Sequential):
 
-    def __init__(self, features, num_classes=1000, init_weights=True, 
-                 mean=ch.tensor([0.4850, 0.4560, 0.4060]), 
-                 std=ch.tensor([0.2290, 0.2240, 0.2250])):
+    def __init__(self, features, num_classes=1000, init_weights=True,
+                 mean=ch.tensor([0.4850, 0.4560, 0.4060]),
+                 std=ch.tensor([0.2290, 0.2240, 0.2250]),
+                 avg_pool_output=(7,7)):
 
         features = features
         sequence, self.sequence_dict = [('normalize', InputNormalize(mean, std))], {}
@@ -55,18 +56,18 @@ class VGG(nn.Sequential):
             if isinstance(f, ch.nn.Conv2d):
                 layer_num += 1
                 if layer_num > 0:
-                    sequence[-1] = (sequence[-1][0], 
+                    sequence[-1] = (sequence[-1][0],
                                     ch.nn.Sequential(OrderedDict(sequence[-1][1])))
                 sequence.append((f'layer{layer_num}', [(fn, f)]))
             else:
                 sequence[-1][1].append((fn, f))
             self.sequence_dict[f'features.{fi}'] = f'layer{layer_num}.{fn}'
-        sequence[-1] = (sequence[-1][0], 
+        sequence[-1] = (sequence[-1][0],
                         ch.nn.Sequential(OrderedDict(sequence[-1][1])))
-                
-        avgpool = nn.AdaptiveAvgPool2d((7, 7))
+
+        avgpool = nn.AdaptiveAvgPool2d(avg_pool_output)
         classifier = nn.Sequential(
-            nn.Linear(512 * 7 * 7, 4096),
+            nn.Linear(512 * avg_pool_output[0] * avg_pool_output[1], 4096),
             nn.ReLU(),
             nn.Dropout(),
             nn.Linear(4096, 4096),
@@ -79,12 +80,12 @@ class VGG(nn.Sequential):
                     ('flatten', Flatten()),
                     ('classifier', classifier)
                       ])
-        
+
         super().__init__(OrderedDict(sequence))
-        
+
         if init_weights:
             self._initialize_weights()
-            
+
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -97,7 +98,7 @@ class VGG(nn.Sequential):
             elif isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
-                
+
 class VGG_OG(nn.Module):
     def __init__(self, features, num_classes=1000, init_weights=True):
         super(VGG, self).__init__()
@@ -148,7 +149,7 @@ def make_layers(cfg, batch_norm=False):
         else:
             conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
             if batch_norm:
-                layers += [('conv', conv2d), 
+                layers += [('conv', conv2d),
                            ('bn', nn.BatchNorm2d(v)),
                            ('relu', nn.ReLU())]
             else:
