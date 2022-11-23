@@ -46,8 +46,7 @@ class VGG(nn.Sequential):
     def __init__(self, features, num_classes=1000, init_weights=True,
                  mean=ch.tensor([0.4850, 0.4560, 0.4060]),
                  std=ch.tensor([0.2290, 0.2240, 0.2250]),
-                 avg_pool_output=(7,7)):
-
+                 avg_pool_output=(7, 7)):
         features = features
         sequence, self.sequence_dict = [('normalize', InputNormalize(mean, std))], {}
         layer_num = -1

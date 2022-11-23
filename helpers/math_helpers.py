@@ -29,7 +29,7 @@ def get_nearest_PD(A, nit=10):
     I have put the nearestPdCholesky function that does that, below.
     '''
     n = A.shape[0]
-    W = np.identity(n) 
+    W = np.identity(n)
     deltaS = 0
     Yk = A.copy()
     for k in range(nit):
@@ -39,9 +39,10 @@ def get_nearest_PD(A, nit=10):
         Yk = _getPu(Xk, W=W)
     return Yk
 
-        
+
 def zca_from_cov(cov):
-    evals, evecs = torch.symeig(cov.double(), eigenvectors=True)
+    # evals, evecs = torch.symeig(cov.double(), eigenvectors=True)
+    evals, evecs = torch.linalg.eigh(cov.double(), UPLO="U")
     zca = torch.mm(torch.mm(evecs, torch.diag
                             (evals.sqrt().clamp(1e-20).reciprocal())),
                    evecs.t()).to(cov.dtype)
